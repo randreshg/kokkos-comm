@@ -5,7 +5,9 @@
 #include <Kokkos_Core.hpp>
 #include <KokkosComm/KokkosComm.hpp>
 
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+#include "rccl/utils.hpp"
+#elif defined(KOKKOSCOMM_ENABLE_NCCL)
 #include "nccl/utils.hpp"
 #endif
 
@@ -16,7 +18,7 @@ class AllToAll : public testing::Test {
  public:
   using Scalar = T;
 };
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL) || defined(KOKKOSCOMM_ENABLE_NCCL)
 using ScalarTypes = testing::Types<float, double, int, int64_t>;
 #else
 using ScalarTypes =
@@ -26,7 +28,12 @@ TYPED_TEST_SUITE(AllToAll, ScalarTypes);
 
 template <typename Scalar>
 auto alltoall_contig_1d() -> void {
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+  using ExecSpace = Kokkos::HIP;
+  auto rccl_ctx   = test_utils::rccl::Ctx::init();
+  auto space      = ExecSpace(rccl_ctx.stream());
+  KokkosComm::Handle<ExecSpace, KokkosComm::Experimental::RcclSpace> h(space, rccl_ctx.comm());
+#elif defined(KOKKOSCOMM_ENABLE_NCCL)
   using ExecSpace = Kokkos::Cuda;
   auto nccl_ctx   = test_utils::nccl::Ctx::init();
   auto space      = ExecSpace();

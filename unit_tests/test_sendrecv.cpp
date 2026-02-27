@@ -5,7 +5,9 @@
 #include <KokkosComm/KokkosComm.hpp>
 
 #include "view_builder.hpp"
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+#include "rccl/utils.hpp"
+#elif defined(KOKKOSCOMM_ENABLE_NCCL)
 #include "nccl/utils.hpp"
 #endif
 
@@ -17,7 +19,7 @@ class SendRecv : public testing::Test {
   using Scalar = T;
 };
 
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL) || defined(KOKKOSCOMM_ENABLE_NCCL)
 using ScalarTypes = ::testing::Types<float, double, int, int64_t>;
 #else
 using ScalarTypes =
@@ -33,7 +35,11 @@ void test_1d(const View1D &v) {
   // FIXME: The NCCL backend does not have a way to construct a `KokkosComm::Handle` without providing a `ncclComm_t`
   // object (default initialization). We use the NCCL test utils to create one and construct a Handle from it.
   // This hack will be required as long as we don't define a way to create a "default" NCCL communicator in KokkosComm.
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+  auto rccl_ctx = test_utils::rccl::Ctx::init();
+  auto space    = Kokkos::HIP(rccl_ctx.stream());
+  KokkosComm::Handle<Kokkos::HIP, KokkosComm::Experimental::RcclSpace> h(space, rccl_ctx.comm());
+#elif defined(KOKKOSCOMM_ENABLE_NCCL)
   auto nccl_ctx = test_utils::nccl::Ctx::init();
   KokkosComm::Handle<Kokkos::Cuda, KokkosComm::Experimental::NcclSpace> h(Kokkos::Cuda(), nccl_ctx.comm());
 #else
@@ -66,7 +72,11 @@ void test_2d(const View2D &v) {
   static_assert(View2D::rank == 2, "");
   using Scalar = typename View2D::non_const_value_type;
 
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+  auto rccl_ctx = test_utils::rccl::Ctx::init();
+  auto space    = Kokkos::HIP(rccl_ctx.stream());
+  KokkosComm::Handle<Kokkos::HIP, KokkosComm::Experimental::RcclSpace> h(space, rccl_ctx.comm());
+#elif defined(KOKKOSCOMM_ENABLE_NCCL)
   auto nccl_ctx = test_utils::nccl::Ctx::init();
   KokkosComm::Handle<Kokkos::Cuda, KokkosComm::Experimental::NcclSpace> h(Kokkos::Cuda(), nccl_ctx.comm());
 #else

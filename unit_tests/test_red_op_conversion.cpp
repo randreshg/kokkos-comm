@@ -5,10 +5,12 @@
 
 #include <gtest/gtest.h>
 #include <KokkosComm/KokkosComm.hpp>
-#if defined(KOKKOSCOMM_ENABLE_MPI)
-#include <mpi.h>
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+#include <rccl/rccl.h>
 #elif defined(KOKKOSCOMM_ENABLE_NCCL)
 #include <nccl.h>
+#elif defined(KOKKOSCOMM_ENABLE_MPI)
+#include <mpi.h>
 #endif
 
 namespace {
@@ -19,7 +21,7 @@ class ReductionOperatorConversion : public testing::Test {
   using RedOp = T;
 };
 
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL) || defined(KOKKOSCOMM_ENABLE_NCCL)
 using RedOpTypes =
     ::testing::Types<KokkosComm::Sum, KokkosComm::Prod, KokkosComm::Min, KokkosComm::Max, KokkosComm::Average>;
 #else
@@ -34,7 +36,19 @@ auto test_red_op_conversion() -> void {
   using DCS = KokkosComm::DefaultCommunicationSpace;
 
   auto red_op = KokkosComm::reduction_op<DCS, RO>();
-#if defined(KOKKOSCOMM_ENABLE_MPI)
+#if defined(KOKKOSCOMM_ENABLE_RCCL) || defined(KOKKOSCOMM_ENABLE_NCCL)
+  if constexpr (std::is_same_v<RO, KokkosComm::Sum>) {
+    ASSERT_EQ(ncclSum, red_op);
+  } else if constexpr (std::is_same_v<RO, KokkosComm::Prod>) {
+    ASSERT_EQ(ncclProd, red_op);
+  } else if constexpr (std::is_same_v<RO, KokkosComm::Min>) {
+    ASSERT_EQ(ncclMin, red_op);
+  } else if constexpr (std::is_same_v<RO, KokkosComm::Max>) {
+    ASSERT_EQ(ncclMax, red_op);
+  } else if constexpr (std::is_same_v<RO, KokkosComm::Average>) {
+    ASSERT_EQ(ncclAvg, red_op);
+  }
+#elif defined(KOKKOSCOMM_ENABLE_MPI)
   if constexpr (std::is_same_v<RO, KokkosComm::BAnd>) {
     ASSERT_EQ(MPI_BAND, red_op);
   } else if constexpr (std::is_same_v<RO, KokkosComm::BOr>) {
@@ -59,18 +73,6 @@ auto test_red_op_conversion() -> void {
     ASSERT_EQ(MPI_SUM, red_op);
   } else if constexpr (std::is_same_v<RO, KokkosComm::Prod>) {
     ASSERT_EQ(MPI_PROD, red_op);
-  }
-#elif defined(KOKKOSCOMM_ENABLE_NCCL)
-  if constexpr (std::is_same_v<RO, KokkosComm::Sum>) {
-    ASSERT_EQ(ncclSum, red_op);
-  } else if constexpr (std::is_same_v<RO, KokkosComm::Prod>) {
-    ASSERT_EQ(ncclProd, red_op);
-  } else if constexpr (std::is_same_v<RO, KokkosComm::Min>) {
-    ASSERT_EQ(ncclMin, red_op);
-  } else if constexpr (std::is_same_v<RO, KokkosComm::Max>) {
-    ASSERT_EQ(ncclMax, red_op);
-  } else if constexpr (std::is_same_v<RO, KokkosComm::Average>) {
-    ASSERT_EQ(ncclAvg, red_op);
   }
 #else
   GTEST_SKIP() << "Unimplemented test for Default Communication Space";

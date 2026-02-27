@@ -214,3 +214,51 @@ if(KokkosComm_ENABLE_NCCL)
     LIBRARIES KokkosComm::KokkosComm MPI::MPI_CXX
   )
 endif()
+
+# --- RCCL backend unit tests --- #
+if(KokkosComm_ENABLE_RCCL)
+  kc_add_unit_test(smoke.rccl.1pe-multi_gpu RCCL NUM_PES 1 FILES rccl/test_nccl.cpp)
+
+  kc_add_unit_test(
+    test.rccl.p2p
+    RCCL
+    NUM_PES 2
+    FILES test_main.cpp rccl/test_point_to_point.cpp
+    LIBRARIES KokkosComm::KokkosComm MPI::MPI_CXX
+  )
+  kc_add_unit_test(
+    test.rccl.broadcast
+    RCCL
+    NUM_PES 2
+    FILES test_main.cpp rccl/test_broadcast.cpp
+    LIBRARIES KokkosComm::KokkosComm MPI::MPI_CXX
+  )
+  kc_add_unit_test(
+    test.rccl.allgather
+    RCCL
+    NUM_PES 2
+    FILES test_main.cpp rccl/test_allgather.cpp
+    LIBRARIES KokkosComm::KokkosComm MPI::MPI_CXX
+  )
+  kc_add_unit_test(
+    test.rccl.alltoall
+    RCCL
+    NUM_PES 2
+    FILES test_main.cpp rccl/test_alltoall.cpp
+    LIBRARIES KokkosComm::KokkosComm MPI::MPI_CXX
+  )
+  kc_add_unit_test(
+    test.rccl.allreduce
+    RCCL
+    NUM_PES 2
+    FILES test_main.cpp rccl/test_allreduce.cpp
+    LIBRARIES KokkosComm::KokkosComm MPI::MPI_CXX
+  )
+  kc_add_unit_test(
+    test.rccl.reduce
+    RCCL
+    NUM_PES 2
+    FILES test_main.cpp rccl/test_reduce.cpp
+    LIBRARIES KokkosComm::KokkosComm MPI::MPI_CXX
+  )
+endif()

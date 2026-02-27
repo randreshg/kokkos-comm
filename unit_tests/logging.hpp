@@ -7,10 +7,18 @@
 #include <cstdlib>
 #include <string_view>
 
+#if defined(Kokkos_ENABLE_CUDA) || defined(KOKKOSCOMM_ENABLE_NCCL)
 #include <cuda.h>
+#endif
+#if defined(Kokkos_ENABLE_HIP) || defined(KOKKOSCOMM_ENABLE_RCCL)
+#include <hip/hip_runtime.h>
+#endif
 #include <mpi.h>
 #if defined(KOKKOSCOMM_ENABLE_NCCL)
 #include <nccl.h>
+#endif
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+#include <rccl/rccl.h>
 #endif
 
 #include <fmt/core.h>
@@ -46,12 +54,23 @@ constexpr std::array level_txt{"FATAL"sv, "ERROR"sv, "WARNING"sv, "INFO"sv, "TRA
 
 #define KC_CHECK(expr, ...) ((expr) ? void(0) : KC_FATAL(__VA_ARGS__))
 
+#if defined(Kokkos_ENABLE_CUDA) || defined(KOKKOSCOMM_ENABLE_NCCL)
 #define KC_CUDA_CHECK(expr)                                                                                      \
   ([&]() {                                                                                                       \
     cudaError_t kc_res_ = (expr);                                                                                \
     return kc_res_ == cudaSuccess ? void(0)                                                                      \
                                   : KC_FATAL("CUDA check failed: `" #expr "`: {}", cudaGetErrorString(kc_res_)); \
   }())
+#endif
+
+#if defined(Kokkos_ENABLE_HIP) || defined(KOKKOSCOMM_ENABLE_RCCL)
+#define KC_HIP_CHECK(expr)                                                                                     \
+  ([&]() {                                                                                                      \
+    hipError_t kc_res_ = (expr);                                                                                \
+    return kc_res_ == hipSuccess ? void(0)                                                                      \
+                                 : KC_FATAL("HIP check failed: `" #expr "`: {}", hipGetErrorString(kc_res_)); \
+  }())
+#endif
 
 #define KC_MPI_CHECK(expr)                                                                            \
   ([&]() {                                                                                            \
@@ -65,5 +84,14 @@ constexpr std::array level_txt{"FATAL"sv, "ERROR"sv, "WARNING"sv, "INFO"sv, "TRA
     ncclResult_t kc_res_ = (expr);                                                                               \
     return kc_res_ == ncclSuccess ? void(0)                                                                      \
                                   : KC_FATAL("NCCL check failed: `" #expr "`: {}", ncclGetErrorString(kc_res_)); \
+  }())
+#endif
+
+#if defined(KOKKOSCOMM_ENABLE_RCCL) && !defined(KC_NCCL_CHECK)
+#define KC_NCCL_CHECK(expr)                                                                                      \
+  ([&]() {                                                                                                       \
+    ncclResult_t kc_res_ = (expr);                                                                               \
+    return kc_res_ == ncclSuccess ? void(0)                                                                      \
+                                  : KC_FATAL("RCCL check failed: `" #expr "`: {}", ncclGetErrorString(kc_res_)); \
   }())
 #endif

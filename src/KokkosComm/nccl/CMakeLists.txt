@@ -1,7 +1,7 @@
 target_sources(
   KokkosComm
   INTERFACE
-    # Public NCCL headers
+    # NCCL thin wrapper headers (delegate to gpu/)
     FILE_SET HEADERS
       BASE_DIRS ${PROJECT_SOURCE_DIR}/src
       FILES

@@ -6,7 +6,9 @@
 #include <Kokkos_Core.hpp>
 #include <KokkosComm/KokkosComm.hpp>
 
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+#include "rccl/utils.hpp"
+#elif defined(KOKKOSCOMM_ENABLE_NCCL)
 #include "nccl/utils.hpp"
 #endif
 
@@ -17,7 +19,7 @@ class AllReduce : public testing::Test {
  public:
   using Scalar = T;
 };
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL) || defined(KOKKOSCOMM_ENABLE_NCCL)
 using ScalarTypes = testing::Types<float, double, int, int64_t>;
 #else
 using ScalarTypes =
@@ -31,7 +33,12 @@ auto allreduce_0d() -> void {
 #if defined(KOKKOSCOMM_IMPL_MPI_IS_OPENMPI) && (defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP))
   GTEST_SKIP() << "Unimplemented test for Open MPI + CUDA/HIP";
 #else
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+  using ExecSpace = Kokkos::HIP;
+  auto rccl_ctx   = test_utils::rccl::Ctx::init();
+  ExecSpace space(rccl_ctx.stream());
+  KokkosComm::Handle<ExecSpace, KokkosComm::Experimental::RcclSpace> h(space, rccl_ctx.comm());
+#elif defined(KOKKOSCOMM_ENABLE_NCCL)
   using ExecSpace = Kokkos::Cuda;
   auto nccl_ctx   = test_utils::nccl::Ctx::init();
   ExecSpace space(nccl_ctx.stream());
@@ -67,7 +74,12 @@ auto allreduce_contig_1d() -> void {
 #if defined(KOKKOSCOMM_IMPL_MPI_IS_OPENMPI) && (defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP))
   GTEST_SKIP() << "Unimplemented test for Open MPI + CUDA/HIP";
 #else
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_RCCL)
+  using ExecSpace = Kokkos::HIP;
+  auto rccl_ctx   = test_utils::rccl::Ctx::init();
+  auto space      = ExecSpace(rccl_ctx.stream());
+  KokkosComm::Handle<ExecSpace, KokkosComm::Experimental::RcclSpace> h(space, rccl_ctx.comm());
+#elif defined(KOKKOSCOMM_ENABLE_NCCL)
   using ExecSpace = Kokkos::Cuda;
   auto nccl_ctx   = test_utils::nccl::Ctx::init();
   auto space      = ExecSpace(nccl_ctx.stream());

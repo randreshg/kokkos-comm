@@ -10,14 +10,11 @@
 
 namespace KokkosComm {
 
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
-namespace Experimental {
-struct NcclSpace;
-}
-// NCCL backend also declares the MPI space as fallback
+#if defined(KOKKOSCOMM_ENABLE_RCCL) || defined(KOKKOSCOMM_ENABLE_NCCL)
+// GPU backend (NCCL or RCCL) is the default; MPI is fallback
 struct MpiSpace;
 
-using DefaultCommunicationSpace  = Experimental::NcclSpace;
+using DefaultCommunicationSpace  = Experimental::GpuCommSpace;
 using FallbackCommunicationSpace = MpiSpace;
 #elif defined(KOKKOSCOMM_ENABLE_MPI)
 struct MpiSpace;

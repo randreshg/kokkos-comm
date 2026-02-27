@@ -6,15 +6,12 @@
 #include <type_traits>
 
 #include <Kokkos_Core.hpp>
-#ifdef KOKKOSCOMM_ENABLE_NCCL
-#include <nccl.h>
+#if defined(KOKKOSCOMM_ENABLE_NCCL) || defined(KOKKOSCOMM_ENABLE_RCCL)
+#include "gpu/gpu_runtime.hpp"
 #endif
 
 #include <KokkosComm/concepts.hpp>
 #include "mpi/mpi_space.hpp"
-#ifdef KOKKOSCOMM_ENABLE_NCCL
-#include "nccl/nccl_space.hpp"
-#endif
 
 namespace KokkosComm {
 namespace {
@@ -75,9 +72,10 @@ constexpr auto mpi_reduction_op() -> MPI_Op {
   }
 }
 
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_NCCL) || defined(KOKKOSCOMM_ENABLE_RCCL)
+// Shared GPU reduction op conversion (NCCL and RCCL use identical ncclRedOp_t symbols)
 template <ReductionOperator RO>
-constexpr auto nccl_reduction_op() -> ncclRedOp_t {
+constexpr auto gpu_reduction_op() -> ncclRedOp_t {
   if constexpr (std::is_same_v<RO, Sum>) {
     return ncclSum;
   } else if constexpr (std::is_same_v<RO, Prod>) {
@@ -89,7 +87,7 @@ constexpr auto nccl_reduction_op() -> ncclRedOp_t {
   } else if constexpr (std::is_same_v<RO, Average>) {
     return ncclAvg;
   } else {
-    static_assert(std::is_void_v<RO>, "KokkosComm::Impl::nccl_reduction_op: operator not implemented");
+    static_assert(std::is_void_v<RO>, "KokkosComm::Impl::gpu_reduction_op: operator not implemented");
     return ncclSum;  // unreachable
   }
 }
@@ -101,9 +99,9 @@ template <CommunicationSpace CS, ReductionOperator RO>
 [[nodiscard]] constexpr auto reduction_op() -> typename CS::reduction_op_type {
   if constexpr (std::is_same_v<CS, MpiSpace>) {
     return Impl::mpi_reduction_op<RO>();
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
-  } else if constexpr (std::is_same_v<CS, Experimental::NcclSpace>) {
-    return Impl::nccl_reduction_op<RO>();
+#if defined(KOKKOSCOMM_ENABLE_NCCL) || defined(KOKKOSCOMM_ENABLE_RCCL)
+  } else if constexpr (std::is_same_v<CS, Experimental::GpuCommSpace>) {
+    return Impl::gpu_reduction_op<RO>();
 #endif
   } else {
     static_assert(std::is_void_v<CS>,
