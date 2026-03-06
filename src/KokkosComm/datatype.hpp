@@ -9,15 +9,12 @@
 
 #include <Kokkos_Core.hpp>
 #include <mpi.h>
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
-#include <nccl.h>
+#if defined(KOKKOSCOMM_ENABLE_NCCL) || defined(KOKKOSCOMM_ENABLE_RCCL)
+#include "gpu/gpu_space.hpp"
 #endif
 
 #include "concepts.hpp"
 #include "mpi/mpi_space.hpp"
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
-#include "nccl/nccl_space.hpp"
-#endif
 
 namespace KokkosComm {
 namespace Impl {
@@ -96,9 +93,10 @@ constexpr auto mpi_datatype() -> MPI_Datatype {
   }
 }
 
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
+#if defined(KOKKOSCOMM_ENABLE_NCCL) || defined(KOKKOSCOMM_ENABLE_RCCL)
+// Shared GPU datatype conversion (NCCL and RCCL use identical ncclDataType_t symbols)
 template <typename T>
-constexpr auto nccl_datatype() -> ncclDataType_t {
+constexpr auto gpu_datatype() -> ncclDataType_t {
   if constexpr (std::is_same_v<T, char>) {
     return ncclChar;
   } else if constexpr (std::is_same_v<T, int>) {
@@ -129,9 +127,22 @@ constexpr auto nccl_datatype() -> ncclDataType_t {
     return ncclFloat;
   } else if constexpr (std::is_same_v<T, double>) {
     return ncclDouble;
+  } else if constexpr (std::is_same_v<T, Kokkos::complex<float>>) {
+    return ncclFloat;
+  } else if constexpr (std::is_same_v<T, Kokkos::complex<double>>) {
+    return ncclDouble;
   } else {
-    static_assert(std::is_void_v<T>, "KokkosComm::Impl::nccl_datatype: datatype not implemented");
+    static_assert(std::is_void_v<T>, "KokkosComm::Impl::gpu_datatype: datatype not implemented");
     return ncclChar;  // unreachable
+  }
+}
+
+template <typename T>
+constexpr size_t gpu_datatype_scale() {
+  if constexpr (std::is_same_v<T, Kokkos::complex<float>> || std::is_same_v<T, Kokkos::complex<double>>) {
+    return 2;
+  } else {
+    return 1;
   }
 }
 #endif
@@ -154,9 +165,9 @@ template <CommunicationSpace C, typename T>
 [[nodiscard]] constexpr auto datatype() -> typename C::datatype_type {
   if constexpr (std::is_same_v<C, MpiSpace>) {
     return Impl::mpi_datatype<std::remove_cv_t<T>>();
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
-  } else if constexpr (std::is_same_v<C, Experimental::NcclSpace>) {
-    return Impl::nccl_datatype<std::remove_cv_t<T>>();
+#if defined(KOKKOSCOMM_ENABLE_NCCL) || defined(KOKKOSCOMM_ENABLE_RCCL)
+  } else if constexpr (std::is_same_v<C, Experimental::GpuCommSpace>) {
+    return Impl::gpu_datatype<std::remove_cv_t<T>>();
 #endif
   } else {
     static_assert(std::is_void_v<C>, "KokkosComm::datatype: conversion not implemented for this communication space");

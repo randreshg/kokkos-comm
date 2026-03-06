@@ -32,23 +32,23 @@
 #include "mpi/barrier.hpp"
 #endif
 
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
-#include "nccl/nccl_space.hpp"
+#if defined(KOKKOSCOMM_ENABLE_NCCL) || defined(KOKKOSCOMM_ENABLE_RCCL)
+#include "gpu/gpu_space.hpp"
 
-#include "nccl/handle.hpp"
-#include "nccl/request.hpp"
+#include "gpu/handle.hpp"
+#include "gpu/request.hpp"
 
-#include "nccl/recv.hpp"
-#include "nccl/send.hpp"
+#include "gpu/recv.hpp"
+#include "gpu/send.hpp"
 
-#include "nccl/broadcast.hpp"
-#include "nccl/allgather.hpp"
-#include "nccl/alltoall.hpp"
-#include "nccl/allreduce.hpp"
-#include "nccl/reduce.hpp"
+#include "gpu/broadcast.hpp"
+#include "gpu/allgather.hpp"
+#include "gpu/alltoall.hpp"
+#include "gpu/allreduce.hpp"
+#include "gpu/reduce.hpp"
 #endif
 
-#if !defined(KOKKOSCOMM_ENABLE_MPI) && !defined(KOKKOSCOMM_ENABLE_NCCL)
+#if !defined(KOKKOSCOMM_ENABLE_MPI) && !defined(KOKKOSCOMM_ENABLE_NCCL) && !defined(KOKKOSCOMM_ENABLE_RCCL)
 static_assert(false, "KokkosComm: at least one communication space must be defined");
 #endif
 

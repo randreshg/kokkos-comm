@@ -13,12 +13,12 @@
 #include "mpi/isend.hpp"
 #include "mpi/irecv.hpp"
 #endif
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
-#include "nccl/nccl_space.hpp"
-#include "nccl/handle.hpp"
-#include "nccl/request.hpp"
-#include "nccl/send.hpp"
-#include "nccl/recv.hpp"
+#if defined(KOKKOSCOMM_ENABLE_NCCL) || defined(KOKKOSCOMM_ENABLE_RCCL)
+#include "gpu/gpu_space.hpp"
+#include "gpu/handle.hpp"
+#include "gpu/request.hpp"
+#include "gpu/send.hpp"
+#include "gpu/recv.hpp"
 #endif
 
 namespace KokkosComm {

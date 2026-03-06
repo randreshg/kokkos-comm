@@ -17,15 +17,15 @@
 #include "mpi/allreduce.hpp"
 #include "mpi/reduce.hpp"
 #endif
-#if defined(KOKKOSCOMM_ENABLE_NCCL)
-#include "nccl/nccl_space.hpp"
-#include "nccl/handle.hpp"
-#include "nccl/request.hpp"
-#include "nccl/broadcast.hpp"
-#include "nccl/allgather.hpp"
-#include "nccl/alltoall.hpp"
-#include "nccl/allreduce.hpp"
-#include "nccl/reduce.hpp"
+#if defined(KOKKOSCOMM_ENABLE_NCCL) || defined(KOKKOSCOMM_ENABLE_RCCL)
+#include "gpu/gpu_space.hpp"
+#include "gpu/handle.hpp"
+#include "gpu/request.hpp"
+#include "gpu/broadcast.hpp"
+#include "gpu/allgather.hpp"
+#include "gpu/alltoall.hpp"
+#include "gpu/allreduce.hpp"
+#include "gpu/reduce.hpp"
 #endif
 
 namespace KokkosComm::Experimental {
