@@ -56,6 +56,27 @@ Types implementing the ``CommunicationSpace`` concept
 
     .. cpp:type:: rank_type = int
 
+.. cpp:class:: Experimental::RcclSpace
+
+    .. cpp:type:: communication_space = RcclSpace
+
+    .. cpp:type:: handle_type = ncclComm_t
+
+    .. cpp:type:: request_type = hipEvent_t
+
+    .. cpp:type:: datatype_type = ncclDataType_t
+
+    .. cpp:type:: reduction_op_type = ncclRedOp_t
+
+    .. cpp:type:: rank_type = int
+
+.. note::
+
+    ``NcclSpace`` and ``RcclSpace`` share the same NCCL-compatible API types (``ncclComm_t``, ``ncclDataType_t``, ``ncclRedOp_t``)
+    because RCCL implements the NCCL API. The only difference is the event type: ``cudaEvent_t`` (CUDA) vs ``hipEvent_t`` (HIP).
+    Both are accessed through a unified GPU trait interface (``GpuCommSpace``), which is the ``DefaultCommunicationSpace``
+    when either NCCL or RCCL is enabled.
+
 
 .. cpp:concept:: template <typename T> ReductionOperator
 

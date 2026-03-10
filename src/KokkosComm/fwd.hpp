@@ -19,6 +19,15 @@ struct MpiSpace;
 
 using DefaultCommunicationSpace  = Experimental::NcclSpace;
 using FallbackCommunicationSpace = MpiSpace;
+#elif defined(KOKKOSCOMM_ENABLE_RCCL)
+namespace Experimental {
+struct RcclSpace;
+}
+// RCCL backend also declares the MPI space as fallback
+struct MpiSpace;
+
+using DefaultCommunicationSpace  = Experimental::RcclSpace;
+using FallbackCommunicationSpace = MpiSpace;
 #elif defined(KOKKOSCOMM_ENABLE_MPI)
 struct MpiSpace;
 using DefaultCommunicationSpace  = MpiSpace;

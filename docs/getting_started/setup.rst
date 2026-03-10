@@ -30,6 +30,9 @@ System requirements
     * - NCCL
       - 2+
 
+    * - RCCL
+      - 2.26+ (from ROCm 7.0+)
+
 
 Kokkos Comm will attempt to support the `same systems and toolchains as Kokkos <https://kokkos.org/kokkos-core-wiki/get-started/requirements.html>`_.
 
@@ -130,7 +133,11 @@ You can enable communication backends by configuring with ``-DKokkosComm_ENABLE_
 
     * * ``KokkosComm_ENABLE_NCCL``
       * ``OFF``
-      * Build with NCCL backend (experimental).
+      * Build with NCCL backend (experimental). Requires Kokkos CUDA backend.
+
+    * * ``KokkosComm_ENABLE_RCCL``
+      * ``OFF``
+      * Build with RCCL backend (experimental). Requires Kokkos HIP backend and ROCm.
 
 Behavior tuning
 ---------------

@@ -282,6 +282,48 @@ NCCL specialization
         Both ``wait_all`` and ``wait_any`` use active polling loops rather than blocking synchronization. While this
         increases CPU utilization, it avoids the overhead of spawning threads or completing requests sequentially.
 
+RCCL specialization
+-------------------
+
+.. cpp:class:: template <> Request<Experimental::RcclSpace>
+
+    Request specialization for the :cpp:class:`Experimental::RcclSpace` communication space.
+    Wraps a ``hipEvent_t`` handle to track the completion of HIP stream operations.
+
+    .. cpp:type:: communication_space = Experimental::RcclSpace
+    .. cpp:type:: request_type = Experimental::RcclSpace::request_type
+    .. cpp:type:: rank_type = Experimental::RcclSpace::rank_type
+
+    .. cpp:function:: explicit Request()
+
+        Constructs an empty ``Request`` with a null event handle.
+
+    .. cpp:function:: ~Request() noexcept
+
+        Destructor. Destroys the underlying ``hipEvent_t`` if one has been created.
+
+    .. cpp:function:: auto capture_stream_state(hipStream_t stream) noexcept -> void
+
+        Records a HIP event on ``stream`` to capture its current state for completion tracking.
+        If a ``hipEvent_t`` was previously created on this request, it is destroyed first.
+
+        :param stream: The HIP stream whose state to capture.
+
+    .. cpp:function:: auto request() noexcept -> request_type&
+                      auto request() const noexcept -> const request_type&
+
+        :returns: A reference to the underlying ``hipEvent_t`` object.
+
+    .. cpp:function:: auto request_ptr() noexcept -> request_type*
+                      auto request_ptr() const noexcept -> const request_type*
+
+        :returns: A pointer to the underlying ``hipEvent_t`` object.
+
+    .. note::
+
+        The RCCL ``Request`` specialization shares the same implementation as the NCCL specialization
+        through the GPU trait-based abstraction. Both use active polling loops for ``wait_all`` and ``wait_any``.
+
 Utility
 =======
 
@@ -301,6 +343,7 @@ Utility
 
     * ``MpiSpace``, returns the corresponding ``MPI_Datatype`` type.
     * ``NcclSpace``, returns the corresponding ``ncclDataType_t`` type.
+    * ``RcclSpace``, returns the corresponding ``ncclDataType_t`` type (RCCL uses the NCCL-compatible API).
 
     :tparam C: The target communication space backend to use for data type conversion.
     :tparam T: The C++-native data type to convert from.
