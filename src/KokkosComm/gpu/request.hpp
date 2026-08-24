@@ -4,6 +4,7 @@
 #pragma once
 
 #include <functional>
+#include <utility>
 #include <memory>
 #include <span>
 #include <vector>
@@ -53,9 +54,26 @@ class Request<Experimental::GpuCommSpace> {
   /// @brief Copy assignment operator is deleted because a `Request` can only be moved.
   auto operator=(const Request&) -> Request& = delete;
   /// @brief Move constructor.
-  Request(Request&&) = default;
+  /// The defaulted move copied `request_` verbatim, leaving both the source and
+  /// the destination owning the same GPU event. The moved-from object then
+  /// destroyed that event in its destructor while the destination was still
+  /// holding it, giving a double free / use-after-free on the event handle.
+  Request(Request&& other) noexcept : request_(other.request_), callbacks_(std::move(other.callbacks_)) {
+    other.request_ = nullptr;
+  }
   /// @brief Move assignment operator.
-  auto operator=(Request&&) -> Request& = default;
+  auto operator=(Request&& other) noexcept -> Request& {
+    if (this != &other) {
+      using device_ops = typename communication_space::device_ops;
+      if (request_ != nullptr) {
+        KC_GPU_CHECK(device_ops::event_destroy(request_));
+      }
+      request_       = other.request_;
+      other.request_ = nullptr;
+      callbacks_     = std::move(other.callbacks_);
+    }
+    return *this;
+  }
 
   /// @return A reference to the underlying GPU event object.
   [[nodiscard]] constexpr auto request() noexcept -> request_type& { return request_; }
